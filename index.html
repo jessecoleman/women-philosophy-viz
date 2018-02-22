@@ -121,7 +121,7 @@ ul li.grey::before {
 <div class="container">
     <div class="row">
         <div id="vis" class="col-sm-9">
-            <svg width="1280" height="500"></svg>
+            <svg width="960" height="500"></svg>
         </div>
         <div class="col-sm-3">
             <ul class="multi-select" id="journals">
@@ -165,7 +165,8 @@ var min_year = 3000;
 var max_val = 0;
 var min_val = 1;
 
-d3.select("#journals li")
+d3.select("#all")
+  .classed("clicked blue", true)
   .on("mouseover", function() { d3.select(this).classed("hover", true); })
   .on("mouseout", function() { d3.select(this).classed("hover", false); })
   .on("click", function() { journal_click(d3.select(this)); });
@@ -245,11 +246,10 @@ function journal_click(d) {
         // reset colors
         colors = ["red", "blue", "green", "purple", "orange", "brown", "pink", "grey"];
         // clear selection
-        d3.selectAll("li.clicked").attr("class", null);
+        d3.selectAll("li").attr("class", null);
         d3.select("#all").classed("clicked blue", true);
         d3.selectAll(".line")
-            .classed("blue", true)
-            .classed("invisible", false);
+            .attr("class", "line blue");
     } 
     // if color is being removed
     else if (d.classed("clicked")) {
@@ -267,19 +267,18 @@ function journal_click(d) {
             .attr("class", "line invisible");
     } 
     // if color is being added
-    else {
+    else if (colors.length > 0) {
         if (d3.select("#all").classed("clicked")) {
             console.log("clicked");
-            d3.select("#all").classed("clicked blue", false)
+            d3.select("#all").attr("class", null);
             d3.selectAll(".line")
-                .classed("invisible", true)
+                .attr("class", "line invisible");
         }
         var color = colors.shift();
         console.log(color);
         d3.select("#" + id).classed("clicked " + color, true);
         d3.select("#" + id + "_line")
-            .classed(color, true)
-            .classed("invisible", false);
+            .attr("class", "line " + color);
     }
 }
 
