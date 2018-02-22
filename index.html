@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+<style>
+@media (min-width: 1200px) {
+    .container{
+        max-width: 80%;
+    }
+}
+
+.multi-select {
+  border: 1px solid #ccc;
+  overflow: scroll;
+  overflow-x: hidden;
+  height: 40vh;
+  width: 100%;
+  padding: 0;
+}
+
+.multi-select li {
+  list-style: none;
+  padding-left: 8px;
+  padding-bottom: 4px;
+}
+
+.multi-select li.hover {
+    background-color: #eee;
+}
+
+.multi-select li.clicked {
+    background-color: #ccc;
+}
+
+ul li::before {
+    color: white;
+    opacity: 0;
+    content: "\2022";
+    font-size: 1.5em;
+    padding-right: 0.5em;
+    position: relative;
+    top: 0.1em;
+}
+
+ul li.clicked::before {
+    opacity: 1;
+}
+
+ul li.red::before {
+    color: #E41A1C; 
+}
+
+ul li.blue::before {
+    color: #377EB8;
+}
+
+ul li.green::before {
+    color: #4DAF4A;
+}
+
+ul li.purple::before {
+    color: #984EA3;
+}
+
+ul li.orange::before { 
+    color: #FF7F00;
+}
+
+ul li.brown::before {
+    color: #A65628;
+}
+
+ul li.pink::before {
+    color: #F781BF;
+}
+
+ul li.grey::before {
+    color: #999999;
+}
+
+.red {
+    stroke: #E41A1C; 
+}
+
+.blue {
+    stroke: #377EB8;
+}
+
+.green {
+    stroke: #4DAF4A;
+}
+
+.purple {
+    stroke: #984EA3;
+}
+
+.orange { 
+    stroke: #FF7F00;
+}
+
+.brown {
+    stroke: #A65628;
+}
+
+.pink {
+    stroke: #F781BF;
+}
+
+.grey {
+    stroke: #999999;
+}
+
+.invisible {
+    opacity: 0;
+    stroke-opacity: 0;
+}
+</style>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div id="vis" class="col-sm-9">
+            <svg width="1280" height="500"></svg>
+        </div>
+        <div class="col-sm-3">
+            <ul class="multi-select" id="journals">
+                <li id="all">All</li>
+            </ul>
+        </div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script>
+
+var svg = d3.select("svg"),
+    margin = {top: 20, right: 20, bottom: 30, left: 50},
+    width = +svg.attr("width") - margin.left - margin.right,
+    height = +svg.attr("height") - margin.top - margin.bottom,
+    g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var parseTime = d3.timeParse("%Y");
+
+var x = d3.scaleTime()
+    .rangeRound([0, width]);
+
+var y = d3.scaleLinear()
+    //.rangeRound([0, height]);
+    .rangeRound([height, 0]);
+
+var line = d3.line()
+    .x(function(d) { return x(d.year); })
+    .y(function(d) { return y(d.val); })
+    .curve(d3.curveBasis);
+
+var journals = {};
+ 
+var max_year = 0;
+var min_year = 3000;
+
+var max_val = 0;
+var min_val = 1;
+
+d3.select("#journals li")
+  .on("mouseover", function() { d3.select(this).classed("hover", true); })
+  .on("mouseout", function() { d3.select(this).classed("hover", false); })
+  .on("click", function() { journal_click(d3.select(this)); });
+
+var data;
+
+d3.csv("fig_8.csv", function(d) {
+  var name = d.name;
+  delete d.name;
+  var id = name.replace(/\s/g, "_").toLowerCase();
+  journals[id] = [];
+
+  Object.keys(d).forEach(function(key, index) {
+      year = parseTime(key);
+      val = +d[key]
+      journals[id].push({"year": year, "val": val})
+      if (year > max_year) max_year = year;
+      if (year < min_year) min_year = year;
+
+      if (val > max_val) max_val = val;
+      if (val < min_val) min_val = val;
+
+  });
+
+  d3.select("#journals").append("li")
+      .attr("id", id)
+      .text(name)
+      .on("mouseover", function() { d3.select(this).classed("hover", true);})
+      .on("mouseout", function() { d3.select(this).classed("hover", false);})
+      .on("click", function() { journal_click(d3.select(this)); });
+
+}, function(error, data) {
+  if (error) throw error;
+
+  x.domain([min_year, max_year]);
+  y.domain([min_val, max_val]);
+
+  g.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x))
+    .select(".domain")
+      .remove();
+
+  g.append("g")
+      .call(d3.axisLeft(y))
+    .append("text")
+      .attr("fill", "#000")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "0.71em")
+      .attr("text-anchor", "end")
+      .text("% women authors");
+
+  Object.keys(journals).forEach(function(key, index) {
+
+    g.append("path")
+        .datum(journals[key])
+        .attr("id", key + "_line")
+        .classed("line blue", true)
+        .attr("fill", "none")
+        .attr("stroke-linejoin", "round")
+        .attr("stroke-linecap", "round")
+        .attr("stroke-width", 1.5)
+        .attr("d", line);
+
+  })
+});
+
+var colors = ["red", "blue", "green", "purple", "orange", "brown", "pink", "grey"];
+
+function journal_click(d) {
+    var id = d.attr("id");
+
+    console.log(id);
+
+    if (id == "all") {
+        // reset colors
+        colors = ["red", "blue", "green", "purple", "orange", "brown", "pink", "grey"];
+        // clear selection
+        d3.selectAll("li.clicked").attr("class", null);
+        d3.select("#all").classed("clicked blue", true);
+        d3.selectAll(".line")
+            .classed("blue", true)
+            .classed("invisible", false);
+    } 
+    // if color is being removed
+    else if (d.classed("clicked")) {
+        // get color from class
+        var color = d.attr("class")
+            .replace("hover", "")
+            .replace("clicked", "")
+            .replace(/ /g, "");
+        colors.unshift(color);
+        console.log(color);
+        // clear elements of that color
+        d.attr("class", null);
+
+        d3.select("#" + id + "_line")
+            .attr("class", "line invisible");
+    } 
+    // if color is being added
+    else {
+        if (d3.select("#all").classed("clicked")) {
+            console.log("clicked");
+            d3.select("#all").classed("clicked blue", false)
+            d3.selectAll(".line")
+                .classed("invisible", true)
+        }
+        var color = colors.shift();
+        console.log(color);
+        d3.select("#" + id).classed("clicked " + color, true);
+        d3.select("#" + id + "_line")
+            .classed(color, true)
+            .classed("invisible", false);
+    }
+}
+
+</script>
