@@ -134,7 +134,6 @@ ul li.grey::before {
             <svg></svg>
             </br>
             <div id="buttons">
-                <button id="">Annual</button>
                 <button id="_rolling_5">Rolling 5 Years</button>
                 <button id="_rolling_10">Rolling 10 Years</button>
                 <button id="_rolling_25">Rolling 25 Years</button>
@@ -168,7 +167,7 @@ var parseTime = d3.timeParse("%Y");
 
 var x = d3.scaleTime()
     .rangeRound([0, width])
-    .domain([parseTime("1950"), parseTime("2011")]);
+    .domain([parseTime("1950"), parseTime("2010")]);
 
 var y = d3.scaleLinear()
     .rangeRound([height, 0]);
@@ -197,7 +196,7 @@ d3.select("#all")
   .on("click", function() { journal_click(d3.select(this)); });
 
 // load all journal names once
-d3.csv("fig_8.csv", function(error, data) {
+d3.csv("fig_8_rolling_5.csv", function(error, data) {
     if (error) throw error;
 
     var max_val = 0;
@@ -213,14 +212,20 @@ d3.csv("fig_8.csv", function(error, data) {
         Object.keys(d).forEach(function(key, index) {
             year = parseTime(key);
             val = +d[key]
-            journals[id].push({"year": year, "val": val})
+
+            if (+key <= 2010) {
+                journals[id].push({"year": year, "val": val})
     
-            if (val > max_val) {
-                max_val = val;
+                if (val > max_val) max_val = val;
+                if (val < min_val) min_val = val;
             }
-            if (val < min_val) min_val = val;
     
         });
+
+        y.domain([min_val, max_val]);
+        d3.select(".y.axis")
+            .call(d3.axisLeft(y));
+
 
         d3.select("#journals").append("li")
             .attr("id", id)
@@ -245,11 +250,6 @@ d3.csv("fig_8.csv", function(error, data) {
         .attr("transform", "translate(0," + height + ")")
         .call(d3.axisBottom(x));
 
-    y.domain([min_val, max_val]);
-
-    d3.select(".y.axis")
-        .call(d3.axisLeft(y));
-
 
 });
 
@@ -267,32 +267,35 @@ function load_data(file_name) {
         journals[id] = [];
     
         Object.keys(d).forEach(function(key, index) {
+
             year = parseTime(key);
             val = +d[key]
-            journals[id].push({"year": year, "val": val})
+            if (+key <= 2010) {
+                journals[id].push({"year": year, "val": val})
     
-            if (val > max_val) max_val = val;
-            if (val < min_val) min_val = val;
+                if (val > max_val) max_val = val;
+                if (val < min_val) min_val = val;
+            }
     
         });
-   
+
+        y.domain([min_val, max_val]);
+        d3.select(".y.axis")
+            .call(d3.axisLeft(y));
+
+ 
     }, function(error, data) {
         if (error) throw error;
     
         vis = d3.select("#vis").transition();
 
-        y.domain([min_val, max_val]);
-        
         vis.select(".y.axis")
             .duration(250)
             .call(d3.axisLeft(y));
 
-        console.log(journals)
-
         Object.keys(journals).forEach(function(key, index) {
 
             data = journals[key];
-            console.log(key)
             
             if (key != "q1" && key != "q3") {
 
@@ -329,9 +332,6 @@ function load_data(file_name) {
                       })
                     }
 
-                    console.log("plotting")
-                    console.log(median_band)
-
                     var band = svg.append("path")
                       .datum(median_band).attr("d", line)
                       .attr("class", "band")
@@ -347,8 +347,8 @@ function load_data(file_name) {
 
 d3.selectAll("#vis button")
     .on("click", function(d) {
-        d3.select("#buttons button").attr("class", null);
-        d3.select(this).attr("class", "clicked");
+        d3.select("#buttons button").attr("background-color", "none");
+        d3.select(this).attr("background-color", "red");
         load_data("fig_8" + this.id + ".csv");
     })
 
