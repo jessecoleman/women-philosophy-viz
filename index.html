@@ -7,6 +7,10 @@
     }
 }
 
+.header {
+    padding:  12px;
+}
+
 .centerBlock {
     diplay: table;
     margin: auto;
@@ -134,7 +138,7 @@ ul li.grey::before {
 <div class="container">
     <div class="row">
         <div class="col-sm-12">
-            <image src="womenbanner.jpg" width="100%"></image>
+            <image src="womenbanner.jpg" width="100%" class="header"></image>
         </div>
     </div>
     <div class="row">
@@ -152,8 +156,12 @@ ul li.grey::before {
         </div>
     </div>
     <div class="row">
-        <h1>Women Authors of Philosophy Papers</h1>
-        <div id="vis" class="col-sm-9">
+        <h3>WOMEN AUTHORS IN PHILOSOPHY JOURNALS</h1>
+            <ul>
+                <li>*This is a visualization of womens' representation in the top 60 journals in philosophy</li>
+                <li>*If the chart doesn't render correctly on window resize, refresh page</li>
+            </ul>
+        <div id="vis" class="col-sm-8">
             <svg></svg>
             </br>
             <div id="buttons">
@@ -162,10 +170,8 @@ ul li.grey::before {
                 <button id="rolling_25">Rolling 25 Years</button>
             </div>
         </div>
-        <div class="col-sm-3">
-            <ul class="multi-select" id="journals">
-                <li id="all">All</li>
-            </ul>
+        <div id="journal-list" class="col-sm-4" style="position: relative; width: 100%; height: 500px; overflow-y: scroll;">
+            <svg id="journal-selector" height="1835"></svg>
         </div>
     </div>
 </div>
@@ -186,11 +192,13 @@ var svg = d3.select("svg"),
 svg.attr("width", vis.clientWidth)
     .attr("height", vis.clientHeight);
 
+d3.select("#journal-list").attr("viewbox", "0 0 " + vis.clientWidth + " " + vis.clientHeight)
+
 var parseTime = d3.timeParse("%Y");
 
 var x = d3.scaleTime()
     .rangeRound([0, width])
-    .domain([parseTime("1950"), parseTime("2011")]);
+    .domain([parseTime("1950"), parseTime("2010")]);
 
 var y = d3.scaleLinear()
     .rangeRound([height, 0]);
@@ -212,11 +220,7 @@ var line = d3.line()
 
 var journals = {};
 
-d3.select("#all")
-  .classed("clicked blue", true)
-  .on("mouseover", function() { d3.select(this).classed("hover", true); })
-  .on("mouseout", function() { d3.select(this).classed("hover", false); })
-  .on("click", function() { journal_click(d3.select(this)); });
+var medianBand;
 
 // load all journal names once
 d3.csv("rolling_5.csv", function(error, data) {
@@ -225,8 +229,9 @@ d3.csv("rolling_5.csv", function(error, data) {
     var max_val = 0;
     var min_val = 1;
 
-    var median_band = [];
+    medianBand = [];
 
+    let pos = 0;
     data.forEach(function(d) {
         var id = d.name.replace(/[\s:&]/g, "_").toLowerCase();
 
@@ -235,21 +240,53 @@ d3.csv("rolling_5.csv", function(error, data) {
         Object.keys(d).forEach(function(key, index) {
             year = parseTime(key);
             val = +d[key]
-            journals[id].push({"year": year, "val": val})
+
+            if (+key <= 2010) {
+                journals[id].push({"year": year, "val": val})
     
-            if (val > max_val) {
-                max_val = val;
+                if (val > max_val) max_val = val;
+                if (val < min_val) min_val = val;
             }
-            if (val < min_val) min_val = val;
     
         });
 
-        d3.select("#journals").append("li")
-            .attr("id", id)
+        y.domain([min_val, max_val]);
+        d3.select(".y.axis")
+            .call(d3.axisLeft(y));
+
+
+        let journal = d3.select("#journal-selector").append("g")
+            .attr("transform", "translate(0, " + 30*pos + ")")
+
+        journal
+            .append("rect")
+            .attr("class", "bar")
+            .attr("height", "30")
+            .attr("x", "0")
+            .attr("opacity", "0");
+
+        journal.append("text")
             .text(d.name)
+            .attr("dx", "2em")
+            .attr("dy", "20")
+
+        journal.append("circle")
+            .attr("fill", "black")
+            .attr("opacity", 0)
+            .attr("cx", "0.5em")
+            .attr("cy", "16")
+            .attr("r", "0.2em")
+
+         journal
+            .attr("id", id)
+            .append("rect")
+            .attr("width", "100%")
+            .attr("height", "30")
+            .attr("x", "0")
+            .attr("opacity", "0")
             .on("mouseover", function() { d3.select(this).classed("hover", true);})
             .on("mouseout", function() { d3.select(this).classed("hover", false);})
-            .on("click", function() { journal_click(d3.select(this)); });
+            .on("click", journal_click);
 
         g.append("path")
            .attr("id", id + "_line")
@@ -261,17 +298,12 @@ d3.csv("rolling_5.csv", function(error, data) {
            .attr("stroke-width", 1.5)
            .attr("d", line);
  
+        pos++;
     });
 
     g.append("g")
         .attr("transform", "translate(0," + height + ")")
         .call(d3.axisBottom(x));
-
-    y.domain([min_val, max_val]);
-
-    d3.select(".y.axis")
-        .call(d3.axisLeft(y));
-
 
 });
 
@@ -284,84 +316,99 @@ function load_data(file_name) {
     var min_val = 1;
     console.log(file_name);
 
+    let x = d3.scaleLinear()
+        .range([0, d3.select("#journal-selector").attr("width")])
+        .domain([0, 1]);
+
     d3.csv(file_name, function(d) {
 
         var id = d.name.replace(/[\s:&]/g, "_").toLowerCase();
         journals[id] = [];
     
         Object.keys(d).forEach(function(key, index) {
+
             year = parseTime(key);
             val = +d[key]
-            journals[id].push({"year": year, "val": val})
+            if (+key <= 2010) {
+                journals[id].push({"year": year, "val": val})
     
-            if (val > max_val) max_val = val;
-            if (val < min_val) min_val = val;
+                if (val > max_val) max_val = val;
+                if (val < min_val) min_val = val;
+            }
     
         });
-   
+
+        y.domain([min_val, max_val]);
+        d3.select(".y.axis")
+            .call(d3.axisLeft(y));
+
+ 
     }, function(error, data) {
         if (error) throw error;
     
         vis = d3.select("#vis").transition();
 
-        y.domain([min_val, max_val]);
-        
         vis.select(".y.axis")
             .duration(250)
             .call(d3.axisLeft(y));
 
-        console.log(journals)
-
         Object.keys(journals).forEach(function(key, index) {
 
             data = journals[key];
-            console.log(key)
+            console.log(data);
             
             if (key != "q1" && key != "q3") {
 
-                vis.selectAll("#" + key + "_line")
+                vis.select("#" + key + "_line")
                     .duration(250)
                     .attr("d", line(data));
+
+                d3.select("#" + key + ".bar")
+                    .attr("width", 20)
+                    .attr("height", x(data[2010]))
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("fill", "#000");
 
             } else {
 
                 if (key == "q1") {
 
                     for(var i = 0; i < data.length; i++) {
-                      median_band.push({
+                      medianBand.push({
                         "year": data[i]["year"],
                         "val": data[i]["val"] - data[i]["std"]
                       })
                     }
 
-                    median_band.push({
+                    medianBand.push({
                       "year": data[data.length - 1]["year"],
                       "val": data[data.length - 1]["val"] - data[data.length - 1]["std"]
                     })
 
                 } else if (key == "q3") {
 
-                    median_band.push({
+                    medianBand.push({
                       "year": data[data.length - 1]["year"],
                       "val": data[data.length - 1]["val"] + data[data.length - 1]["std"]
                     })
                     for (var i = data.length - 1; i >= 0; i--) {
-                      median_band.push({
+                      medianBand.push({
                         "year": data[i]["year"],
                         "val": data[i]["val"] + data[i]["std"]
                       })
                     }
 
-                    console.log("plotting")
-                    console.log(median_band)
-
                     var band = svg.append("path")
-                      .datum(median_band).attr("d", line)
+                      .class("#band")
+                      .datum(medianBand).attr("d", line)
                       .attr("class", "band")
-                      .attr("fill", "steelblue")
+                      .attr("fill", "grey")
                       .attr("opacity", 0.6)
 
                 }
+
+                console.log(medianBand);
             }
  
         })
@@ -378,7 +425,9 @@ d3.selectAll("#vis button")
 var colors = ["red", "blue", "green", "purple", "orange", "brown", "pink", "grey"];
 
 function journal_click(d) {
-    var id = d.attr("id");
+    let journal = d3.select(d3.event.target);
+    console.log(d3.event.target)
+    var id = journal.attr("id");
 
     if (id == "all") {
         // reset colors
