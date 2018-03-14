@@ -4,8 +4,12 @@
 <style>
 @media (min-width: 1200px) {
     .container{
-        max-width: 80%;
     }
+}
+
+.centerBlock {
+    diplay: table;
+    margin: auto;
 }
 
 #buttons {
@@ -129,15 +133,33 @@ ul li.grey::before {
 <body>
 <div class="container">
     <div class="row">
+        <div class="col-sm-12">
+            <image src="womenbanner.jpg" width="100%"></image>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-12">
+            <h3>WHAT DO YOU WANT TO FIND OUT?</h3>
+        </div>
+    </div>
+     <div class="row">
+        <div class="col-sm-6">
+        </br>
+        <p>It is well established that women are under-represented in philosophy at all levels. There is also some data on the under-representation of women in journals. However, further data is necessary to see more clearly what has gone wrong, how things have been changing over time, and to understand how women are represented within different journals, professorial types, and ranks at different kinds of departments. This site provides some new data on approximately 100 departments over the past 10 years and faculty at all ranks in Philosophical Gourmet Report (PGR) ranked and unranked programs for 2015. The site also shows the proportion and numbers of women published in Leiter survey ranked top 20 journals. Details of the methodology are available under About and we also provide some further Resources for those who want to make a difference for women in philosophy. For some summary information, see this headline, this article, the news, this post and this one.</p>
+        </div>
+        <div class="col-sm-6" align="center">
+            <iframe width="480" height="270" src="https://www.youtube.com/embed/zndDhO6Mo68?rel=0" frameborder="0" allowfullscreen=""></iframe>
+        </div>
+    </div>
+    <div class="row">
         <h1>Women Authors of Philosophy Papers</h1>
         <div id="vis" class="col-sm-9">
             <svg></svg>
             </br>
             <div id="buttons">
-                <button id="">Annual</button>
-                <button id="_rolling_5">Rolling 5 Years</button>
-                <button id="_rolling_10">Rolling 10 Years</button>
-                <button id="_rolling_25">Rolling 25 Years</button>
+                <button id="rolling_5">Rolling 5 Years</button>
+                <button id="rolling_10">Rolling 10 Years</button>
+                <button id="rolling_25">Rolling 25 Years</button>
             </div>
         </div>
         <div class="col-sm-3">
@@ -197,7 +219,7 @@ d3.select("#all")
   .on("click", function() { journal_click(d3.select(this)); });
 
 // load all journal names once
-d3.csv("fig_8.csv", function(error, data) {
+d3.csv("rolling_5.csv", function(error, data) {
     if (error) throw error;
 
     var max_val = 0;
@@ -206,7 +228,7 @@ d3.csv("fig_8.csv", function(error, data) {
     var median_band = [];
 
     data.forEach(function(d) {
-        var id = d.name.replace(/\s/g, "_").toLowerCase();
+        var id = d.name.replace(/[\s:&]/g, "_").toLowerCase();
 
         journals[id] = [];
     
@@ -260,10 +282,11 @@ function load_data(file_name) {
 
     var max_val = 0;
     var min_val = 1;
+    console.log(file_name);
 
     d3.csv(file_name, function(d) {
 
-        var id = d.name.replace(/\s/g, "_").toLowerCase();
+        var id = d.name.replace(/[\s:&]/g, "_").toLowerCase();
         journals[id] = [];
     
         Object.keys(d).forEach(function(key, index) {
@@ -347,9 +370,9 @@ function load_data(file_name) {
 
 d3.selectAll("#vis button")
     .on("click", function(d) {
-        d3.select("#buttons button").attr("class", null);
-        d3.select(this).attr("class", "clicked");
-        load_data("fig_8" + this.id + ".csv");
+        d3.select("#buttons button").attr("font-weight", null);
+        d3.select(this).attr("font-weight", "bold");
+        load_data(this.id + ".csv");
     })
 
 var colors = ["red", "blue", "green", "purple", "orange", "brown", "pink", "grey"];
