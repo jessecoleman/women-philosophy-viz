@@ -4,6 +4,7 @@
 <style>
 @media (min-width: 1200px) {
     .container{
+        margin-bottom: 10%;
     }
 }
 
@@ -40,12 +41,12 @@
   padding-bottom: 4px;
 }
 
-.multi-select li.hover {
-    background-color: #eee;
+rect.hover {
+    opacity: .1;
 }
 
-.multi-select li.clicked {
-    background-color: #ccc;
+rect.clicked {
+    opacity: .2;
 }
 
 ul li::before {
@@ -62,67 +63,67 @@ ul li.clicked::before {
     opacity: 1;
 }
 
-ul li.red::before {
-    color: #E41A1C; 
+circle.red {
+    fill: #E41A1C; 
 }
 
-ul li.blue::before {
-    color: #377EB8;
+circle.blue {
+    fill: #377EB8;
 }
 
-ul li.green::before {
-    color: #4DAF4A;
+circle.green {
+    fill: #4DAF4A;
 }
 
-ul li.purple::before {
-    color: #984EA3;
+circle.purple {
+    fill: #984EA3;
 }
 
-ul li.orange::before { 
-    color: #FF7F00;
+circle.orange { 
+    fill: #FF7F00;
 }
 
-ul li.brown::before {
-    color: #A65628;
+circle.brown {
+    fill: #A65628;
 }
 
-ul li.pink::before {
-    color: #F781BF;
+circle.pink {
+    fill: #F781BF;
 }
 
-ul li.grey::before {
-    color: #999999;
+circle.grey {
+    fill: #999999;
 }
 
-.red {
+path.red {
     stroke: #E41A1C; 
 }
 
-.blue {
+path.blue {
     stroke: #377EB8;
 }
 
-.green {
+path.green {
     stroke: #4DAF4A;
 }
 
-.purple {
+path.purple {
     stroke: #984EA3;
 }
 
-.orange { 
+path.orange { 
     stroke: #FF7F00;
 }
 
-.brown {
+path.brown {
     stroke: #A65628;
 }
 
-.pink {
+path.pink {
     stroke: #F781BF;
 }
 
-.grey {
+path.grey {
     stroke: #999999;
 }
 
@@ -201,7 +202,8 @@ var x = d3.scaleTime()
     .domain([parseTime("1950"), parseTime("2010")]);
 
 var y = d3.scaleLinear()
-    .rangeRound([height, 0]);
+    .rangeRound([height, 0])
+    .domain([0, 1]);
 
 g.append("g")
     .attr("class", "y axis")
@@ -221,6 +223,10 @@ var line = d3.line()
 var journals = {};
 
 var medianBand;
+
+let barX = d3.scaleLinear()
+    .range([$("#journal-selector").width(), 0])
+    .domain([0, 1]);
 
 // load all journal names once
 d3.csv("rolling_5.csv", function(error, data) {
@@ -250,7 +256,6 @@ d3.csv("rolling_5.csv", function(error, data) {
     
         });
 
-        y.domain([min_val, max_val]);
         d3.select(".y.axis")
             .call(d3.axisLeft(y));
 
@@ -260,44 +265,50 @@ d3.csv("rolling_5.csv", function(error, data) {
 
         journal
             .append("rect")
+            .attr("id", id + "-bar")
             .attr("class", "bar")
             .attr("height", "30")
+            .attr("fill", "steelblue")
             .attr("x", "0")
-            .attr("opacity", "0");
+            .attr("width", barX(1 - d[2010]))
+            .attr("x", barX(d[2010]))
+            .attr("y", 0)
+            .attr("opacity", 0.8);
+
+        journal
+            .append("rect")
+            .attr("id", id)
+            .attr("width", "100%")
+            .attr("height", "30")
+            .attr("x", "0")
+            .attr("opacity", 0)
+            .attr("pointer-events", "auto")
+            .on("mouseover", function() { d3.select(d3.event.target).classed("hover", true);})
+            .on("mouseout", function() { d3.select(d3.event.target).classed("hover", false);})
+            .on("click", () => { journal_click(journal); });
 
         journal.append("text")
             .text(d.name)
             .attr("dx", "2em")
             .attr("dy", "20")
+            .attr("pointer-events", "none")
 
         journal.append("circle")
-            .attr("fill", "black")
-            .attr("opacity", 0)
+            .attr("class", "invisible")
             .attr("cx", "0.5em")
             .attr("cy", "16")
             .attr("r", "0.2em")
 
-         journal
-            .attr("id", id)
-            .append("rect")
-            .attr("width", "100%")
-            .attr("height", "30")
-            .attr("x", "0")
-            .attr("opacity", "0")
-            .on("mouseover", function() { d3.select(this).classed("hover", true);})
-            .on("mouseout", function() { d3.select(this).classed("hover", false);})
-            .on("click", journal_click);
-
         g.append("path")
            .attr("id", id + "_line")
            .datum(journals[id])
-           .classed("line blue", true)
+           .classed("line invisible", true)
            .attr("fill", "none")
            .attr("stroke-linejoin", "round")
            .attr("stroke-linecap", "round")
            .attr("stroke-width", 1.5)
            .attr("d", line);
- 
+
         pos++;
     });
 
@@ -314,11 +325,6 @@ function load_data(file_name) {
 
     var max_val = 0;
     var min_val = 1;
-    console.log(file_name);
-
-    let x = d3.scaleLinear()
-        .range([0, d3.select("#journal-selector").attr("width")])
-        .domain([0, 1]);
 
     d3.csv(file_name, function(d) {
 
@@ -338,7 +344,6 @@ function load_data(file_name) {
     
         });
 
-        y.domain([min_val, max_val]);
         d3.select(".y.axis")
             .call(d3.axisLeft(y));
 
@@ -355,55 +360,55 @@ function load_data(file_name) {
         Object.keys(journals).forEach(function(key, index) {
 
             data = journals[key];
-            
+
             if (key != "q1" && key != "q3") {
 
                 vis.select("#" + key + "_line")
                     .duration(250)
                     .attr("d", line(data));
 
-                d3.select("#" + key + ".bar")
-                    .attr("width", 20)
-                    .attr("height", x(data[2010]))
-                    .attr("x", 0)
-                    .attr("y", 0)
-                    .attr("fill", "#000");
+                d3.select("#" + key + "-bar")
+                    .attr("width", barX(1- data[data.length-1].val))
+                    .attr("x", barX(data[data.length-1].val))
+                    .attr("y", 0);
 
             } else {
 
                 if (key == "q1") {
 
+                    console.log(data);
+
                     for(var i = 0; i < data.length; i++) {
                       medianBand.push({
                         "year": data[i]["year"],
-                        "val": data[i]["val"] - data[i]["std"]
+                        "val": data[i]["val"]
                       })
                     }
 
                     medianBand.push({
                       "year": data[data.length - 1]["year"],
-                      "val": data[data.length - 1]["val"] - data[data.length - 1]["std"]
+                      "val": data[data.length - 1]["val"]
                     })
 
                 } else if (key == "q3") {
 
                     medianBand.push({
                       "year": data[data.length - 1]["year"],
-                      "val": data[data.length - 1]["val"] + data[data.length - 1]["std"]
+                      "val": data[data.length - 1]["val"]
                     })
                     for (var i = data.length - 1; i >= 0; i--) {
                       medianBand.push({
                         "year": data[i]["year"],
-                        "val": data[i]["val"] + data[i]["std"]
+                        "val": data[i]["val"]
                       })
                     }
 
-                    var band = svg.append("path")
-                      .class("#band")
+                    var band = vis.append("path")
+                      .attr("id", "#band")
                       .datum(medianBand).attr("d", line)
-                      .attr("class", "band")
                       .attr("fill", "grey")
                       .attr("opacity", 0.6)
+                      .attr("class", null)
 
                 }
 
@@ -425,42 +430,43 @@ var colors = ["red", "blue", "green", "purple", "orange", "brown", "pink", "grey
 
 function journal_click(d) {
     let journal = d3.select(d3.event.target);
-    console.log(d3.event.target)
     var id = journal.attr("id");
 
     if (id == "all") {
         // reset colors
         colors = ["red", "blue", "green", "purple", "orange", "brown", "pink", "grey"];
         // clear selection
-        d3.selectAll("li").attr("class", null);
+        d3.selectAll("circle").attr("class", null);
         d3.select("#all").classed("clicked blue", true);
         d3.selectAll(".line")
             .attr("class", "line blue");
     } 
     // if color is being removed
-    else if (d.classed("clicked")) {
+    else if (journal.classed("clicked")) {
         // get color from class
-        var color = d.attr("class")
+        var color = journal.attr("class")
             .replace("hover", "")
             .replace("clicked", "")
             .replace(/ /g, "");
         colors.unshift(color);
         // clear elements of that color
-        d.attr("class", null);
+        journal.attr("class", null);
+        d.select("circle").attr("class", "invisible")
         d3.select("#" + id + "_line")
             .attr("class", "line invisible");
     } 
     // if color is being added
     else if (colors.length > 0) {
-        if (d3.select("#all").classed("clicked")) {
-            d3.select("#all").attr("class", null);
-            d3.selectAll(".line")
-                .attr("class", "line invisible");
-        }
+        //if (d3.select("#all").classed("clicked")) {
+        //    d3.select("#all").attr("class", null);
+        //    d3.selectAll(".line")
+        //        .attr("class", "line invisible");
+        //}
         var color = colors.shift();
         d3.select("#" + id).classed("clicked " + color, true);
         d3.select("#" + id + "_line")
             .attr("class", "line " + color);
+        d.select("circle").attr("class", color)
     }
 }
 
