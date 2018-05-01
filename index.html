@@ -165,7 +165,6 @@ path.grey {
             </ul>
         <div id="vis" class="col-sm-8">
             <svg></svg>
-            </br>
             <div id="buttons">
                 <button id="rolling_5">Rolling 5 Years</button>
                 <button id="rolling_10">Rolling 10 Years</button>
@@ -173,7 +172,7 @@ path.grey {
             </div>
         </div>
         <div id="journal-list" class="col-sm-4" style="position: relative; width: 100%; height: 500px; overflow-y: scroll;">
-            <svg id="journal-selector" height="1835"></svg>
+            <svg id="journal-selector" height="1835" width="100%"></svg>
         </div>
     </br>
         <p>
@@ -268,17 +267,17 @@ d3.csv("rolling_5.csv", function(error, data) {
         let journal = d3.select("#journal-selector").append("g")
             .attr("transform", "translate(0, " + 30*pos + ")")
 
-        journal
-            .append("rect")
-            .attr("id", id + "-bar")
-            .attr("class", "bar")
-            .attr("height", "30")
-            .attr("fill", "steelblue")
-            .attr("x", "0")
-            .attr("width", barX(1 - d[2010]))
-            .attr("x", barX(d[2010]))
-            .attr("y", 0)
-            .attr("opacity", 0.8);
+        //journal
+        //    .append("rect")
+        //    .attr("id", id + "-bar")
+        //    .attr("class", "bar")
+        //    .attr("height", "30")
+        //    .attr("fill", "steelblue")
+        //    .attr("x", "0")
+        //    .attr("width", barX(1 - d[2010]))
+        //    .attr("x", barX(d[2010]))
+        //    .attr("y", 0)
+        //    .attr("opacity", 0.8);
 
         journal
             .append("rect")
@@ -372,10 +371,10 @@ function load_data(file_name) {
                     .duration(250)
                     .attr("d", line(data));
 
-                d3.select("#" + key + "-bar")
-                    .attr("width", barX(1- data[data.length-1].val))
-                    .attr("x", barX(data[data.length-1].val))
-                    .attr("y", 0);
+                //d3.select("#" + key + "-bar")
+                //    .attr("width", barX(1- data[data.length-1].val))
+                //    .attr("x", barX(data[data.length-1].val))
+                //    .attr("y", 0);
 
             } else {
 
